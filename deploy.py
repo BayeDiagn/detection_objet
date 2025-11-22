@@ -246,9 +246,10 @@ def process_video(model: YOLO, video_path: str,
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         
-        # Fichier de sortie
+        # Fichier de sortie avec codec H.264 compatible web
         output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        # Utiliser H.264 (avc1) pour la compatibilité navigateur
+        fourcc = cv2.VideoWriter_fourcc(*'avc1')
         out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
         
         # Statistiques globales
