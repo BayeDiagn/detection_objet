@@ -246,11 +246,17 @@ def process_video(model: YOLO, video_path: str,
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         
-        # Fichier de sortie avec codec H.264 compatible web
+        # Créer un fichier temporaire pour la vidéo intermédiaire
+        temp_path = tempfile.NamedTemporaryFile(delete=False, suffix='.avi').name
         output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
-        # Utiliser H.264 (avc1) pour la compatibilité navigateur
-        fourcc = cv2.VideoWriter_fourcc(*'avc1')
-        out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+        
+        # Utiliser MJPEG codec qui est toujours disponible
+        fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+        out = cv2.VideoWriter(temp_path, fourcc, fps, (width, height))
+        
+        if not out.isOpened():
+            st.error("Impossible de créer le fichier vidéo de sortie")
+            return None, {}
         
         # Statistiques globales
         global_stats = {
@@ -293,6 +299,34 @@ def process_video(model: YOLO, video_path: str,
         
         cap.release()
         out.release()
+        
+        # Convertir en MP4 avec H.264 en utilisant FFmpeg
+        status_text.text("Conversion de la vidéo en format compatible navigateur...")
+        try:
+            import subprocess
+            result = subprocess.run([
+                'ffmpeg', '-y', '-i', temp_path,
+                '-c:v', 'libx264', '-preset', 'fast',
+                '-crf', '23', '-pix_fmt', 'yuv420p',
+                output_path
+            ], capture_output=True, text=True)
+            
+            # Nettoyer le fichier temporaire
+            try:
+                os.unlink(temp_path)
+            except:
+                pass
+            
+            if result.returncode != 0:
+                st.warning("Conversion FFmpeg échouée, utilisation de la vidéo originale")
+                return temp_path, global_stats
+                
+        except FileNotFoundError:
+            st.warning("FFmpeg non disponible, utilisation du format MJPEG")
+            return temp_path, global_stats
+        except Exception as e:
+            st.warning(f"Erreur lors de la conversion: {str(e)}")
+            return temp_path, global_stats
         
         return output_path, global_stats
         
@@ -448,7 +482,7 @@ def main():
             with col1:
                 st.markdown("#### Image Originale")
                 image = Image.open(uploaded_file)
-                st.image(image, use_container_width=True)
+                st.image(image, width="stretch")
             
             # Traitement
             with st.spinner(" Détection en cours..."):
@@ -460,7 +494,7 @@ def main():
             # Affichage du résultat
             with col2:
                 st.markdown("#### Image avec Détections")
-                st.image(annotated_image, use_container_width=True)
+                st.image(annotated_image, width="stretch")
             
             # Statistiques
             st.markdown("---")
