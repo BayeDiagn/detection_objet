@@ -247,11 +247,11 @@ def process_video(model: YOLO, video_path: str,
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         
         # Créer un fichier temporaire pour la vidéo intermédiaire
-        temp_path = tempfile.NamedTemporaryFile(delete=False, suffix='.avi').name
+        temp_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
         output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
         
-        # Utiliser MJPEG codec qui est toujours disponible
-        fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+        # Utiliser mp4v codec
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         out = cv2.VideoWriter(temp_path, fourcc, fps, (width, height))
         
         if not out.isOpened():
