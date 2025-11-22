@@ -318,14 +318,9 @@ def process_video(model: YOLO, video_path: str,
                 pass
             
             if result.returncode != 0:
-                st.warning("Conversion FFmpeg échouée, utilisation de la vidéo originale")
                 return temp_path, global_stats
                 
-        except FileNotFoundError:
-            st.warning("FFmpeg non disponible, utilisation du format MJPEG")
-            return temp_path, global_stats
-        except Exception as e:
-            st.warning(f"Erreur lors de la conversion: {str(e)}")
+        except (FileNotFoundError, Exception):
             return temp_path, global_stats
         
         return output_path, global_stats
@@ -532,13 +527,9 @@ def main():
                 tfile.write(uploaded_file.read())
                 video_path = tfile.name
             
-            # Affichage vidéo originale
-            st.markdown("#### Vidéo Originale")
-            st.video(video_path)
-            
             # Traitement automatique
             st.markdown("---")
-            st.markdown("### 🔄 Traitement en cours...")
+            st.markdown("### Preparation de la Vidéo en cours...")
             
             progress_bar = st.progress(0)
             status_text = st.empty()
@@ -555,7 +546,7 @@ def main():
             if output_path:
                 st.success(" Traitement terminé!")
                 
-                # Affichage de la vidéo traitée
+                # Affichage de la vidéo avec détections
                 st.markdown("#### Vidéo avec Détections")
                 st.video(output_path)
                 
@@ -571,7 +562,7 @@ def main():
                     st.metric(" Frames Traitées", video_stats.get("processed_frames", 0))
                 
                 with col3:
-                    st.metric(" Détections Totales", video_stats.get("total_detections", 0))
+                    st.metric("🎯 Détections Totales", video_stats.get("total_detections", 0))
                 
                 with col4:
                     frames_with_det = video_stats.get("frames_with_detections", 0)
@@ -579,7 +570,7 @@ def main():
                     percentage = (frames_with_det / total * 100) if total > 0 else 0
                     st.metric(" Frames avec Détections", f"{percentage:.1f}%")
                 
-                st.info(f" Temps de traitement: {processing_time:.2f} secondes")
+                st.info(f"⏱ Temps de traitement: {processing_time:.2f} secondes")
                 
                 # Téléchargement
                 with open(output_path, 'rb') as f:
